@@ -8,38 +8,36 @@ import (
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
+	"backend/models"
 )
 
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	// Load file .env
+	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("File .env tidak ditemukan")
+		log.Println("Error loading .env file, using default environment variables")
 	}
 
-	// Ambil konfigurasi database dari .env
-	dsn := fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_NAME"),
-	)
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
 
-	// Koneksi database
-	db, err := gorm.Open(
-		mysql.Open(dsn),
-		&gorm.Config{},
-	)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
+
+	database, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		log.Fatal("Gagal koneksi database:", err)
+		panic("Failed to connect to database!")
 	}
 
-	DB = db
+	// Auto Migrate the models
+	database.AutoMigrate(&models.User{})
 
-	log.Println("Database berhasil terhubung")
+	DB = database
+	log.Println("Database connected successfully!")
 }
